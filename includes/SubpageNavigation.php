@@ -259,6 +259,7 @@ class SubpageNavigation {
 	 * @return string
 	 */
 	public static function subpagesSQL( $dbr, $prefix, $namespace = NS_MAIN ) {
+		$DBprefix = $GLOBALS['wgDBprefix'];
 		$cond = 'page_namespace = ' . $namespace . ( $prefix != '/' ?
 			' AND page_title LIKE ' . $dbr->addQuotes( $prefix . '%' ) : '');
 
@@ -266,14 +267,14 @@ class SubpageNavigation {
 		// use the following https://dev.mysql.com/doc/refman/8.0/en/with.html#common-table-expressions-recursive-examples
 		// (Hierarchical Data Traversal)
 		return 'SELECT t.*, ( 1 - (t.page_title REGEXP \'^[0-9]+$\') ) AS isNumeric,
-		(SELECT COUNT(*) FROM page WHERE ' . $cond . ' AND page_title LIKE CONCAT(t.page_title, "/%")) AS childCount
+		(SELECT COUNT(*) FROM ' . $DBprefix . 'page WHERE ' . $cond . ' AND page_title LIKE CONCAT(t.page_title, "/%")) AS childCount
 FROM (SELECT page_id, page_namespace, page_title,
 	SUBSTR( page_title, 1, LOCATE(\'/\', SUBSTR( page_title, ' . ( strlen( $prefix ) + 1 ) . ') ) + ' . ( strlen( $prefix ) - 1 ) . ')
-	AS subpage FROM page
+	AS subpage FROM ' . $DBprefix . 'page
 WHERE ' . $cond . '
 ) as t
 WHERE NOT EXISTS (
-	SELECT 1 FROM page
+	SELECT 1 FROM ' . $DBprefix . 'page
 	WHERE ' . $cond . '
 	AND page_title = t.subpage
 )
